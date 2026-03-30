@@ -29,6 +29,9 @@ public class MigrationRunnerTests : IDisposable
         Assert.True(TableExists(connection, "pfs_fees"), "pfs_fees table should exist");
         Assert.True(TableExists(connection, "user_preferences"), "user_preferences table should exist");
         Assert.True(TableExists(connection, "import_log"), "import_log table should exist");
+        Assert.True(TableExists(connection, "rural_zips"), "rural_zips table should exist");
+        Assert.True(ColumnExists(connection, "dmepos_fees", "allowable_nr"), "dmepos_fees.allowable_nr should exist");
+        Assert.True(ColumnExists(connection, "dmepos_fees", "allowable_r"), "dmepos_fees.allowable_r should exist");
     }
 
     [Fact]
@@ -74,6 +77,19 @@ public class MigrationRunnerTests : IDisposable
         cmd.CommandText = "SELECT COUNT(1) FROM sqlite_master WHERE type='table' AND name=@name";
         cmd.Parameters.AddWithValue("@name", tableName);
         return Convert.ToInt64(cmd.ExecuteScalar()) > 0;
+    }
+
+    private static bool ColumnExists(SqliteConnection connection, string tableName, string columnName)
+    {
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = $"PRAGMA table_info({tableName})";
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            if (reader.GetString(1).Equals(columnName, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     public void Dispose()

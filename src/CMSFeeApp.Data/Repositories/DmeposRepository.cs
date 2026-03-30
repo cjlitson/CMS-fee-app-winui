@@ -38,7 +38,7 @@ public class DmeposRepository
             cmd.Parameters.AddWithValue("@desc", $"%{descriptionKeyword}%");
         }
 
-        cmd.CommandText = $"SELECT id, hcpcs_code, description, state_abbr, year, allowable, modifier, data_source, imported_at FROM dmepos_fees WHERE {string.Join(" AND ", conditions)} ORDER BY hcpcs_code, state_abbr LIMIT 5000";
+        cmd.CommandText = $"SELECT id, hcpcs_code, description, state_abbr, year, allowable, allowable_nr, allowable_r, modifier, data_source, imported_at FROM dmepos_fees WHERE {string.Join(" AND ", conditions)} ORDER BY hcpcs_code, state_abbr LIMIT 5000";
 
         var results = new List<DmepsFee>();
         using var reader = cmd.ExecuteReader();
@@ -52,9 +52,11 @@ public class DmeposRepository
                 StateAbbr = reader.GetString(3),
                 Year = reader.GetInt32(4),
                 Allowable = (decimal)reader.GetDouble(5),
-                Modifier = reader.IsDBNull(6) ? null : reader.GetString(6),
-                DataSource = reader.GetString(7),
-                ImportedAt = DateTime.Parse(reader.GetString(8))
+                AllowableNr = reader.IsDBNull(6) ? null : (decimal?)reader.GetDouble(6),
+                AllowableR = reader.IsDBNull(7) ? null : (decimal?)reader.GetDouble(7),
+                Modifier = reader.IsDBNull(8) ? null : reader.GetString(8),
+                DataSource = reader.GetString(9),
+                ImportedAt = DateTime.Parse(reader.GetString(10))
             });
         }
         return results;
@@ -93,8 +95,8 @@ public class DmeposRepository
         using var cmd = connection.CreateCommand();
         cmd.Transaction = transaction;
         cmd.CommandText = """
-            INSERT INTO dmepos_fees (hcpcs_code, description, state_abbr, year, allowable, modifier, data_source, imported_at)
-            VALUES (@code, @desc, @state, @year, @allowable, @modifier, @source, @imported_at)
+            INSERT INTO dmepos_fees (hcpcs_code, description, state_abbr, year, allowable, allowable_nr, allowable_r, modifier, data_source, imported_at)
+            VALUES (@code, @desc, @state, @year, @allowable, @allowable_nr, @allowable_r, @modifier, @source, @imported_at)
             """;
 
         var pCode = cmd.Parameters.Add("@code", SqliteType.Text);
@@ -102,6 +104,8 @@ public class DmeposRepository
         var pState = cmd.Parameters.Add("@state", SqliteType.Text);
         var pYear = cmd.Parameters.Add("@year", SqliteType.Integer);
         var pAllowable = cmd.Parameters.Add("@allowable", SqliteType.Real);
+        var pAllowableNr = cmd.Parameters.Add("@allowable_nr", SqliteType.Real);
+        var pAllowableR = cmd.Parameters.Add("@allowable_r", SqliteType.Real);
         var pModifier = cmd.Parameters.Add("@modifier", SqliteType.Text);
         var pSource = cmd.Parameters.Add("@source", SqliteType.Text);
         var pImportedAt = cmd.Parameters.Add("@imported_at", SqliteType.Text);
@@ -113,6 +117,8 @@ public class DmeposRepository
             pState.Value = fee.StateAbbr;
             pYear.Value = fee.Year;
             pAllowable.Value = (double)fee.Allowable;
+            pAllowableNr.Value = fee.AllowableNr.HasValue ? (object)(double)fee.AllowableNr.Value : DBNull.Value;
+            pAllowableR.Value = fee.AllowableR.HasValue ? (object)(double)fee.AllowableR.Value : DBNull.Value;
             pModifier.Value = (object?)fee.Modifier ?? DBNull.Value;
             pSource.Value = fee.DataSource;
             pImportedAt.Value = fee.ImportedAt.ToString("O");
@@ -120,5 +126,29 @@ public class DmeposRepository
         }
 
         transaction.Commit();
+    }
+
+    public void DeleteFeesByYearState(int year, string? stateAbbr = null, string? dataSource = null)
+    {
+        var connection = _context.GetConnection();
+        using var cmd = connection.CreateCommand();
+
+        var conditions = new List<string> { "year = @year" };
+        cmd.Parameters.AddWithValue("@year", year);
+
+        if (!string.IsNullOrWhiteSpace(stateAbbr))
+        {
+            conditions.Add("state_abbr = @state");
+            cmd.Parameters.AddWithValue("@state", stateAbbr.ToUpperInvariant());
+        }
+
+        if (!string.IsNullOrWhiteSpace(dataSource))
+        {
+            conditions.Add("data_source = @source");
+            cmd.Parameters.AddWithValue("@source", dataSource);
+        }
+
+        cmd.CommandText = $"DELETE FROM dmepos_fees WHERE {string.Join(" AND ", conditions)}";
+        cmd.ExecuteNonQuery();
     }
 }
