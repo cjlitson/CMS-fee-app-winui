@@ -88,7 +88,8 @@ public class MigrationRunner
             var parts = resourceName.Split('.');
             var id = parts.Length >= 2 ? parts[^2] : resourceName;
 
-            using var stream = assembly.GetManifestResourceStream(resourceName)!;
+            using var stream = assembly.GetManifestResourceStream(resourceName)
+                ?? throw new InvalidOperationException($"Embedded migration resource '{resourceName}' not found. Ensure the file is marked as EmbeddedResource.");
             using var reader = new StreamReader(stream);
             var sql = reader.ReadToEnd();
             yield return (id, sql);

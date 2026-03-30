@@ -167,7 +167,10 @@ public partial class MainViewModel : ObservableObject
             UpdateVersion = info.LatestVersion;
             UpdateUrl = info.ReleaseUrl;
         }
-        catch { /* silently ignore update check failures */ }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or OperationCanceledException)
+        {
+            // Update check is best-effort; network failures are expected in offline environments
+        }
     }
 
     private async Task LoadAvailableYearsAsync()
@@ -189,6 +192,9 @@ public partial class MainViewModel : ObservableObject
                     SelectedYear = AvailableYears[0];
             }
         }
-        catch { /* use default years */ }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            // DB not yet populated; fall back to the default year list seeded in the constructor
+        }
     }
 }
