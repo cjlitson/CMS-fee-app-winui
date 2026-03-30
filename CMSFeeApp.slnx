@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CMSFeeApp.Core/CMSFeeApp.Core.csproj" />
+    <Project Path="src/CMSFeeApp.Data/CMSFeeApp.Data.csproj" />
+    <Project Path="src/CMSFeeApp.WinUI/CMSFeeApp.WinUI.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CMSFeeApp.Tests/CMSFeeApp.Tests.csproj" />
+  </Folder>
+</Solution>
