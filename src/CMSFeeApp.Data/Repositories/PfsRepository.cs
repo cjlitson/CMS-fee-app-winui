@@ -102,4 +102,22 @@ public class PfsRepository
 
         transaction.Commit();
     }
+
+    public void DeleteFeesByYear(int year, string? dataSource = null)
+    {
+        var connection = _context.GetConnection();
+        using var cmd = connection.CreateCommand();
+
+        var conditions = new List<string> { "year = @year" };
+        cmd.Parameters.AddWithValue("@year", year);
+
+        if (!string.IsNullOrWhiteSpace(dataSource))
+        {
+            conditions.Add("data_source = @source");
+            cmd.Parameters.AddWithValue("@source", dataSource);
+        }
+
+        cmd.CommandText = $"DELETE FROM pfs_fees WHERE {string.Join(" AND ", conditions)}";
+        cmd.ExecuteNonQuery();
+    }
 }

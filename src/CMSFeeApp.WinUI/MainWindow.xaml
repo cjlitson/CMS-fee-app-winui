@@ -84,6 +84,8 @@
                         <controls:DataGridTextColumn Header="State" Binding="{Binding StateAbbr}" Width="60" />
                         <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
                         <controls:DataGridTextColumn Header="Allowable" Binding="{Binding Allowable, StringFormat=\{0:C\}}" Width="100" />
+                        <controls:DataGridTextColumn Header="Allowable (NR)" Binding="{Binding AllowableNr, StringFormat=\{0:C\}}" Width="110" />
+                        <controls:DataGridTextColumn Header="Allowable (R)" Binding="{Binding AllowableR, StringFormat=\{0:C\}}" Width="110" />
                         <controls:DataGridTextColumn Header="Modifier" Binding="{Binding Modifier}" Width="80" />
                     </controls:DataGrid.Columns>
                 </controls:DataGrid>

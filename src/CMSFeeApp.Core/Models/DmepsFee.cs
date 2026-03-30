@@ -8,6 +8,8 @@ public class DmepsFee
     public string StateAbbr { get; set; } = string.Empty;
     public int Year { get; set; }
     public decimal Allowable { get; set; }
+    public decimal? AllowableNr { get; set; }
+    public decimal? AllowableR { get; set; }
     public string? Modifier { get; set; }
     public string DataSource { get; set; } = string.Empty;
     public DateTime ImportedAt { get; set; }

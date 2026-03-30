@@ -1,6 +1,7 @@
 using CMSFeeApp.Core.Services;
 using CMSFeeApp.Data;
 using CMSFeeApp.Data.Repositories;
+using CMSFeeApp.Data.Services;
 using CMSFeeApp.WinUI.ViewModels;
 using Microsoft.UI.Xaml;
 
@@ -21,13 +22,35 @@ public partial class App : Application
         migrationRunner.RunMigrations();
 
         var httpClient = new System.Net.Http.HttpClient();
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CMSFeeApp/1.0");
+
         var updateService = new UpdateService(httpClient);
         var dmeposRepo = new DmeposRepository(dbContext);
         var pfsRepo = new PfsRepository(dbContext);
+        var importLogRepo = new ImportLogRepository(dbContext);
 
-        var viewModel = new MainViewModel(updateService, dmeposRepo, pfsRepo);
+        var dmeposImportService = new DmeposImportService(dmeposRepo, importLogRepo);
+        var pfsImportService = new PfsImportService(pfsRepo, importLogRepo);
+
+        var dmeposExportService = new FeeExportService(CMSFeeApp.Core.FeeScheduleType.Dmepos, dmeposRepo);
+        var pfsExportService = new FeeExportService(CMSFeeApp.Core.FeeScheduleType.PfsNational, pfsRepo);
+
+        var dmeposSyncService = new DmeposCmsSyncService(httpClient, dmeposImportService, dmeposRepo, importLogRepo);
+        var pfsSyncService = new PfsCmsSyncService(httpClient, pfsImportService, pfsRepo, importLogRepo);
+
+        var viewModel = new MainViewModel(
+            updateService,
+            dmeposRepo,
+            pfsRepo,
+            dmeposImportService,
+            pfsImportService,
+            dmeposExportService,
+            pfsExportService,
+            dmeposSyncService,
+            pfsSyncService);
 
         _window = new MainWindow(viewModel);
+        viewModel.Window = _window;
         _window.Activate();
     }
 
