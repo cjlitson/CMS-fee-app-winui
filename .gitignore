@@ -1,0 +1,25 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+
+# NuGet
+packages/
+*.nupkg
+*.lock.json
+
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Publish output
+publish/
+dist/

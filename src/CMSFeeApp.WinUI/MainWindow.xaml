@@ -1,0 +1,115 @@
+<Window
+    x:Class="CMSFeeApp.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:CMSFeeApp.WinUI"
+    xmlns:vm="using:CMSFeeApp.WinUI.ViewModels"
+    xmlns:controls="using:CommunityToolkit.WinUI.UI.Controls"
+    Title="CMS Fee Schedule Viewer"
+    MinWidth="900"
+    MinHeight="600">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <!-- Update Banner -->
+        <InfoBar
+            Grid.Row="0"
+            IsOpen="{x:Bind ViewModel.IsUpdateAvailable, Mode=OneWay}"
+            Severity="Informational"
+            Title="Update Available"
+            Message="{x:Bind ViewModel.UpdateVersion, Mode=OneWay}"
+            IsClosable="True">
+            <InfoBar.ActionButton>
+                <HyperlinkButton Content="Open Release Page" Command="{x:Bind ViewModel.OpenUpdateUrlCommand}" />
+            </InfoBar.ActionButton>
+        </InfoBar>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Padding="12" RowDefinitions="Auto,*">
+
+            <!-- Filter Bar -->
+            <Grid Grid.Row="0" Margin="0,0,0,8" ColumnDefinitions="Auto,Auto,Auto,*,*,Auto,Auto,Auto">
+
+                <ComboBox Grid.Column="0" Margin="0,0,8,0" Width="200"
+                          Header="Schedule Type"
+                          SelectedIndex="0"
+                          SelectionChanged="ScheduleType_SelectionChanged">
+                    <ComboBoxItem Content="DMEPOS" Tag="Dmepos" />
+                    <ComboBoxItem Content="PFS National" Tag="PfsNational" />
+                </ComboBox>
+
+                <ComboBox Grid.Column="1" Margin="0,0,8,0" Width="100"
+                          Header="Year"
+                          ItemsSource="{x:Bind ViewModel.AvailableYears, Mode=OneWay}"
+                          SelectedItem="{x:Bind ViewModel.SelectedYear, Mode=TwoWay}" />
+
+                <ComboBox Grid.Column="2" Margin="0,0,8,0" Width="80"
+                          Header="State"
+                          ItemsSource="{x:Bind ViewModel.AvailableStates, Mode=OneWay}"
+                          SelectedItem="{x:Bind ViewModel.SelectedState, Mode=TwoWay}"
+                          Visibility="{x:Bind ViewModel.IsStateVisible, Mode=OneWay}" />
+
+                <TextBox Grid.Column="3" Margin="0,0,8,0"
+                         Header="HCPCS Code"
+                         PlaceholderText="Search code..."
+                         Text="{x:Bind ViewModel.CodeFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBox Grid.Column="4" Margin="0,0,8,0"
+                         Header="Description"
+                         PlaceholderText="Search description..."
+                         Text="{x:Bind ViewModel.DescriptionFilter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+
+                <Button Grid.Column="5" Margin="0,0,8,0" VerticalAlignment="Bottom"
+                        Content="Sync" Command="{x:Bind ViewModel.SyncCommand}" />
+
+                <Button Grid.Column="6" Margin="0,0,8,0" VerticalAlignment="Bottom"
+                        Content="Import" Command="{x:Bind ViewModel.ImportCommand}" />
+
+                <Button Grid.Column="7" VerticalAlignment="Bottom"
+                        Content="Export" Command="{x:Bind ViewModel.ExportCommand}" />
+            </Grid>
+
+            <!-- Data Grids -->
+            <Grid Grid.Row="1">
+                <!-- DMEPOS Grid -->
+                <controls:DataGrid
+                    x:Name="DmeposGrid"
+                    ItemsSource="{x:Bind ViewModel.DmeposResults, Mode=OneWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    Visibility="{x:Bind ViewModel.IsStateVisible, Mode=OneWay}">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn Header="HCPCS Code" Binding="{Binding HcpcsCode}" Width="120" />
+                        <controls:DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        <controls:DataGridTextColumn Header="State" Binding="{Binding StateAbbr}" Width="60" />
+                        <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
+                        <controls:DataGridTextColumn Header="Allowable" Binding="{Binding Allowable, StringFormat=\{0:C\}}" Width="100" />
+                        <controls:DataGridTextColumn Header="Modifier" Binding="{Binding Modifier}" Width="80" />
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+
+                <!-- PFS Grid -->
+                <controls:DataGrid
+                    x:Name="PfsGrid"
+                    ItemsSource="{x:Bind ViewModel.PfsResults, Mode=OneWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    Visibility="{x:Bind ViewModel.IsPfsVisible, Mode=OneWay}">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn Header="HCPCS Code" Binding="{Binding HcpcsCode}" Width="120" />
+                        <controls:DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
+                        <controls:DataGridTextColumn Header="Non-Facility" Binding="{Binding PaymentNonFacility, StringFormat=\{0:C\}}" Width="110" />
+                        <controls:DataGridTextColumn Header="Facility" Binding="{Binding PaymentFacility, StringFormat=\{0:C\}}" Width="100" />
+                        <controls:DataGridTextColumn Header="Modifier" Binding="{Binding Modifier}" Width="80" />
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+            </Grid>
+        </Grid>
+
+        <!-- Status Bar -->
+        <Border Grid.Row="2" Background="{ThemeResource SystemControlBackgroundChromeMediumBrush}" Padding="8,4">
+            <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" VerticalAlignment="Center" />
+        </Border>
+    </Grid>
+</Window>
