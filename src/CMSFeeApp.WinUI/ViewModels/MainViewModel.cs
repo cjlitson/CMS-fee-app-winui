@@ -151,7 +151,10 @@ public partial class MainViewModel : ObservableObject
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(UpdateUrl) { UseShellExecute = true });
             }
-            catch { /* ignore */ }
+            catch
+            {
+                StatusMessage = "Could not open release page. Please visit GitHub manually.";
+            }
         }
     }
 

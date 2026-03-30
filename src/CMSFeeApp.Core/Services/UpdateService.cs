@@ -7,8 +7,10 @@ namespace CMSFeeApp.Core.Services;
 
 public class UpdateService : IUpdateService
 {
-    private readonly HttpClient _httpClient;
     private const string GitHubApiUrl = "https://api.github.com/repos/cjlitson/CMS-fee-app-winui/releases/latest";
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private readonly HttpClient _httpClient;
 
     public UpdateService(HttpClient httpClient)
     {
@@ -63,8 +65,6 @@ public class UpdateService : IUpdateService
         }
         return false;
     }
-
-    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private sealed class GitHubRelease
     {
