@@ -4,5 +4,8 @@ public enum FeeScheduleType
 {
     Dmepos,
     PfsNational,
-    // Future: Opps, Asp, ClinicalLab, etc.
+    ClinicalLab,
+    AspDrug,
+    Opps,
+    Asc,
 }

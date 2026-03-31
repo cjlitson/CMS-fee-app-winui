@@ -36,6 +36,10 @@
                           SelectionChanged="ScheduleType_SelectionChanged">
                     <ComboBoxItem Content="DMEPOS" Tag="Dmepos" />
                     <ComboBoxItem Content="PFS National" Tag="PfsNational" />
+                    <ComboBoxItem Content="Clinical Lab (CLFS)" Tag="ClinicalLab" />
+                    <ComboBoxItem Content="ASP Drug Pricing" Tag="AspDrug" />
+                    <ComboBoxItem Content="Hosp. Outpatient (OPPS)" Tag="Opps" />
+                    <ComboBoxItem Content="Ambulatory Surgical (ASC)" Tag="Asc" />
                 </ComboBox>
 
                 <ComboBox Grid.Column="1" Margin="0,0,8,0" Width="100"
@@ -104,6 +108,71 @@
                         <controls:DataGridTextColumn Header="Non-Facility" Binding="{Binding PaymentNonFacility, StringFormat=\{0:C\}}" Width="110" />
                         <controls:DataGridTextColumn Header="Facility" Binding="{Binding PaymentFacility, StringFormat=\{0:C\}}" Width="100" />
                         <controls:DataGridTextColumn Header="Modifier" Binding="{Binding Modifier}" Width="80" />
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+
+                <!-- CLFS Grid -->
+                <controls:DataGrid
+                    x:Name="ClfsGrid"
+                    ItemsSource="{x:Bind ViewModel.ClfsResults, Mode=OneWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    Visibility="{x:Bind ViewModel.IsClfsVisible, Mode=OneWay}">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn Header="HCPCS Code" Binding="{Binding HcpcsCode}" Width="120" />
+                        <controls:DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
+                        <controls:DataGridTextColumn Header="Payment Limit" Binding="{Binding PaymentLimit, StringFormat=\{0:C\}}" Width="120" />
+                        <controls:DataGridTextColumn Header="Modifier" Binding="{Binding Modifier}" Width="80" />
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+
+                <!-- ASP Grid -->
+                <controls:DataGrid
+                    x:Name="AspGrid"
+                    ItemsSource="{x:Bind ViewModel.AspResults, Mode=OneWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    Visibility="{x:Bind ViewModel.IsAspVisible, Mode=OneWay}">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn Header="HCPCS Code" Binding="{Binding HcpcsCode}" Width="120" />
+                        <controls:DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
+                        <controls:DataGridTextColumn Header="Quarter" Binding="{Binding Quarter}" Width="70" />
+                        <controls:DataGridTextColumn Header="Payment Limit" Binding="{Binding PaymentLimit, StringFormat=\{0:C\}}" Width="120" />
+                        <controls:DataGridTextColumn Header="Dosage" Binding="{Binding DosageDescriptor}" Width="150" />
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+
+                <!-- OPPS Grid -->
+                <controls:DataGrid
+                    x:Name="OppsGrid"
+                    ItemsSource="{x:Bind ViewModel.OppsResults, Mode=OneWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    Visibility="{x:Bind ViewModel.IsOppsVisible, Mode=OneWay}">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn Header="HCPCS Code" Binding="{Binding HcpcsCode}" Width="120" />
+                        <controls:DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
+                        <controls:DataGridTextColumn Header="APC Code" Binding="{Binding ApcCode}" Width="90" />
+                        <controls:DataGridTextColumn Header="Payment Rate" Binding="{Binding PaymentRate, StringFormat=\{0:C\}}" Width="110" />
+                        <controls:DataGridTextColumn Header="Status" Binding="{Binding StatusIndicator}" Width="70" />
+                    </controls:DataGrid.Columns>
+                </controls:DataGrid>
+
+                <!-- ASC Grid -->
+                <controls:DataGrid
+                    x:Name="AscGrid"
+                    ItemsSource="{x:Bind ViewModel.AscResults, Mode=OneWay}"
+                    AutoGenerateColumns="False"
+                    IsReadOnly="True"
+                    Visibility="{x:Bind ViewModel.IsAscVisible, Mode=OneWay}">
+                    <controls:DataGrid.Columns>
+                        <controls:DataGridTextColumn Header="HCPCS Code" Binding="{Binding HcpcsCode}" Width="120" />
+                        <controls:DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="*" />
+                        <controls:DataGridTextColumn Header="Year" Binding="{Binding Year}" Width="60" />
+                        <controls:DataGridTextColumn Header="Payment Rate" Binding="{Binding PaymentRate, StringFormat=\{0:C\}}" Width="110" />
                     </controls:DataGrid.Columns>
                 </controls:DataGrid>
             </Grid>
