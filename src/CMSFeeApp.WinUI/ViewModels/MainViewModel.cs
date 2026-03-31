@@ -12,7 +12,11 @@ namespace CMSFeeApp.WinUI.ViewModels;
 public enum ScheduleType
 {
     Dmepos,
-    PfsNational
+    PfsNational,
+    ClinicalLab,
+    AspDrug,
+    Opps,
+    Asc
 }
 
 public partial class MainViewModel : ObservableObject
@@ -20,12 +24,28 @@ public partial class MainViewModel : ObservableObject
     private readonly UpdateService _updateService;
     private readonly DmeposRepository _dmeposRepository;
     private readonly PfsRepository _pfsRepository;
+    private readonly ClfsRepository _clfsRepository;
+    private readonly AspRepository _aspRepository;
+    private readonly OppsRepository _oppsRepository;
+    private readonly AscRepository _ascRepository;
     private readonly DmeposImportService _dmeposImportService;
     private readonly PfsImportService _pfsImportService;
+    private readonly ClfsImportService _clfsImportService;
+    private readonly AspImportService _aspImportService;
+    private readonly OppsImportService _oppsImportService;
+    private readonly AscImportService _ascImportService;
     private readonly FeeExportService _dmeposExportService;
     private readonly FeeExportService _pfsExportService;
+    private readonly FeeExportService _clfsExportService;
+    private readonly FeeExportService _aspExportService;
+    private readonly FeeExportService _oppsExportService;
+    private readonly FeeExportService _ascExportService;
     private readonly DmeposCmsSyncService _dmeposSyncService;
     private readonly PfsCmsSyncService _pfsSyncService;
+    private readonly ClfsCmsSyncService _clfsSyncService;
+    private readonly AspCmsSyncService _aspSyncService;
+    private readonly OppsCmsSyncService _oppsSyncService;
+    private readonly AscCmsSyncService _ascSyncService;
 
     private CancellationTokenSource? _syncCts;
 
@@ -61,14 +81,26 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsPfsVisible))]
+    [NotifyPropertyChangedFor(nameof(IsClfsVisible))]
+    [NotifyPropertyChangedFor(nameof(IsAspVisible))]
+    [NotifyPropertyChangedFor(nameof(IsOppsVisible))]
+    [NotifyPropertyChangedFor(nameof(IsAscVisible))]
     private bool _isStateVisible = true;
 
-    public bool IsPfsVisible => !IsStateVisible;
+    public bool IsPfsVisible => SelectedScheduleType == ScheduleType.PfsNational;
+    public bool IsClfsVisible => SelectedScheduleType == ScheduleType.ClinicalLab;
+    public bool IsAspVisible => SelectedScheduleType == ScheduleType.AspDrug;
+    public bool IsOppsVisible => SelectedScheduleType == ScheduleType.Opps;
+    public bool IsAscVisible => SelectedScheduleType == ScheduleType.Asc;
 
     public ObservableCollection<int> AvailableYears { get; } = new();
     public ObservableCollection<string> AvailableStates { get; } = new();
     public ObservableCollection<DmepsFee> DmeposResults { get; } = new();
     public ObservableCollection<PfsFee> PfsResults { get; } = new();
+    public ObservableCollection<ClfsFee> ClfsResults { get; } = new();
+    public ObservableCollection<AspFee> AspResults { get; } = new();
+    public ObservableCollection<OppsFee> OppsResults { get; } = new();
+    public ObservableCollection<AscFee> AscResults { get; } = new();
 
     // Window handle used for file pickers
     public Microsoft.UI.Xaml.Window? Window { get; set; }
@@ -77,22 +109,54 @@ public partial class MainViewModel : ObservableObject
         UpdateService updateService,
         DmeposRepository dmeposRepository,
         PfsRepository pfsRepository,
+        ClfsRepository clfsRepository,
+        AspRepository aspRepository,
+        OppsRepository oppsRepository,
+        AscRepository ascRepository,
         DmeposImportService dmeposImportService,
         PfsImportService pfsImportService,
+        ClfsImportService clfsImportService,
+        AspImportService aspImportService,
+        OppsImportService oppsImportService,
+        AscImportService ascImportService,
         FeeExportService dmeposExportService,
         FeeExportService pfsExportService,
+        FeeExportService clfsExportService,
+        FeeExportService aspExportService,
+        FeeExportService oppsExportService,
+        FeeExportService ascExportService,
         DmeposCmsSyncService dmeposSyncService,
-        PfsCmsSyncService pfsSyncService)
+        PfsCmsSyncService pfsSyncService,
+        ClfsCmsSyncService clfsSyncService,
+        AspCmsSyncService aspSyncService,
+        OppsCmsSyncService oppsSyncService,
+        AscCmsSyncService ascSyncService)
     {
         _updateService = updateService;
         _dmeposRepository = dmeposRepository;
         _pfsRepository = pfsRepository;
+        _clfsRepository = clfsRepository;
+        _aspRepository = aspRepository;
+        _oppsRepository = oppsRepository;
+        _ascRepository = ascRepository;
         _dmeposImportService = dmeposImportService;
         _pfsImportService = pfsImportService;
+        _clfsImportService = clfsImportService;
+        _aspImportService = aspImportService;
+        _oppsImportService = oppsImportService;
+        _ascImportService = ascImportService;
         _dmeposExportService = dmeposExportService;
         _pfsExportService = pfsExportService;
+        _clfsExportService = clfsExportService;
+        _aspExportService = aspExportService;
+        _oppsExportService = oppsExportService;
+        _ascExportService = ascExportService;
         _dmeposSyncService = dmeposSyncService;
         _pfsSyncService = pfsSyncService;
+        _clfsSyncService = clfsSyncService;
+        _aspSyncService = aspSyncService;
+        _oppsSyncService = oppsSyncService;
+        _ascSyncService = ascSyncService;
 
         // Initialize with current and recent years
         for (var y = DateTime.Now.Year; y >= 2020; y--)
@@ -105,6 +169,11 @@ public partial class MainViewModel : ObservableObject
     partial void OnSelectedScheduleTypeChanged(ScheduleType value)
     {
         IsStateVisible = value == ScheduleType.Dmepos;
+        OnPropertyChanged(nameof(IsPfsVisible));
+        OnPropertyChanged(nameof(IsClfsVisible));
+        OnPropertyChanged(nameof(IsAspVisible));
+        OnPropertyChanged(nameof(IsOppsVisible));
+        OnPropertyChanged(nameof(IsAscVisible));
         _ = SearchAsync();
     }
 
@@ -120,23 +189,62 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            if (SelectedScheduleType == ScheduleType.Dmepos)
+            switch (SelectedScheduleType)
             {
-                var fees = await Task.Run(() =>
-                    _dmeposRepository.GetFees(SelectedYear, SelectedState, CodeFilter, DescriptionFilter));
-                DmeposResults.Clear();
-                foreach (var fee in fees)
-                    DmeposResults.Add(fee);
-                StatusMessage = $"{DmeposResults.Count} records found";
-            }
-            else
-            {
-                var fees = await Task.Run(() =>
-                    _pfsRepository.GetFees(SelectedYear, CodeFilter, DescriptionFilter));
-                PfsResults.Clear();
-                foreach (var fee in fees)
-                    PfsResults.Add(fee);
-                StatusMessage = $"{PfsResults.Count} records found";
+                case ScheduleType.Dmepos:
+                {
+                    var fees = await Task.Run(() =>
+                        _dmeposRepository.GetFees(SelectedYear, SelectedState, CodeFilter, DescriptionFilter));
+                    DmeposResults.Clear();
+                    foreach (var fee in fees) DmeposResults.Add(fee);
+                    StatusMessage = $"{DmeposResults.Count} records found";
+                    break;
+                }
+                case ScheduleType.PfsNational:
+                {
+                    var fees = await Task.Run(() =>
+                        _pfsRepository.GetFees(SelectedYear, CodeFilter, DescriptionFilter));
+                    PfsResults.Clear();
+                    foreach (var fee in fees) PfsResults.Add(fee);
+                    StatusMessage = $"{PfsResults.Count} records found";
+                    break;
+                }
+                case ScheduleType.ClinicalLab:
+                {
+                    var fees = await Task.Run(() =>
+                        _clfsRepository.GetFees(SelectedYear, CodeFilter, DescriptionFilter));
+                    ClfsResults.Clear();
+                    foreach (var fee in fees) ClfsResults.Add(fee);
+                    StatusMessage = $"{ClfsResults.Count} records found";
+                    break;
+                }
+                case ScheduleType.AspDrug:
+                {
+                    var fees = await Task.Run(() =>
+                        _aspRepository.GetFees(SelectedYear, hcpcsCode: CodeFilter, descriptionKeyword: DescriptionFilter));
+                    AspResults.Clear();
+                    foreach (var fee in fees) AspResults.Add(fee);
+                    StatusMessage = $"{AspResults.Count} records found";
+                    break;
+                }
+                case ScheduleType.Opps:
+                {
+                    var fees = await Task.Run(() =>
+                        _oppsRepository.GetFees(SelectedYear, CodeFilter, DescriptionFilter));
+                    OppsResults.Clear();
+                    foreach (var fee in fees) OppsResults.Add(fee);
+                    StatusMessage = $"{OppsResults.Count} records found";
+                    break;
+                }
+                case ScheduleType.Asc:
+                {
+                    var fees = await Task.Run(() =>
+                        _ascRepository.GetFees(SelectedYear, CodeFilter, DescriptionFilter));
+                    AscResults.Clear();
+                    foreach (var fee in fees) AscResults.Add(fee);
+                    StatusMessage = $"{AscResults.Count} records found";
+                    break;
+                }
             }
         }
         catch (Exception ex)
@@ -163,11 +271,16 @@ public partial class MainViewModel : ObservableObject
 
         try
         {
-            ImportResult result;
-            if (SelectedScheduleType == ScheduleType.Dmepos)
-                result = await _dmeposSyncService.SyncFromCmsAsync(SelectedYear, progress, ct);
-            else
-                result = await _pfsSyncService.SyncFromCmsAsync(SelectedYear, progress, ct);
+            ImportResult result = SelectedScheduleType switch
+            {
+                ScheduleType.Dmepos => await _dmeposSyncService.SyncFromCmsAsync(SelectedYear, progress, ct),
+                ScheduleType.PfsNational => await _pfsSyncService.SyncFromCmsAsync(SelectedYear, progress, ct),
+                ScheduleType.ClinicalLab => await _clfsSyncService.SyncFromCmsAsync(SelectedYear, progress, ct),
+                ScheduleType.AspDrug => await _aspSyncService.SyncFromCmsAsync(SelectedYear, progress, ct),
+                ScheduleType.Opps => await _oppsSyncService.SyncFromCmsAsync(SelectedYear, progress, ct),
+                ScheduleType.Asc => await _ascSyncService.SyncFromCmsAsync(SelectedYear, progress, ct),
+                _ => await _dmeposSyncService.SyncFromCmsAsync(SelectedYear, progress, ct)
+            };
 
             if (result.Success)
             {
@@ -205,16 +318,8 @@ public partial class MainViewModel : ObservableObject
             WinRT.Interop.InitializeWithWindow.Initialize(picker, GetWindowHandle());
             picker.ViewMode = Windows.Storage.Pickers.PickerViewMode.List;
             picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary;
-
-            if (SelectedScheduleType == ScheduleType.Dmepos)
-            {
-                picker.FileTypeFilter.Add(".csv");
-                picker.FileTypeFilter.Add(".txt");
-            }
-            else
-            {
-                picker.FileTypeFilter.Add(".csv");
-            }
+            picker.FileTypeFilter.Add(".csv");
+            picker.FileTypeFilter.Add(".txt");
 
             var file = await picker.PickSingleFileAsync();
             if (file == null) return;
@@ -224,10 +329,17 @@ public partial class MainViewModel : ObservableObject
 
             ImportResult result;
             var ct = CancellationToken.None;
-            if (SelectedScheduleType == ScheduleType.Dmepos)
-                result = await _dmeposImportService.ImportFromFileAsync(file.Path, SelectedYear, ct);
-            else
-                result = await _pfsImportService.ImportFromFileAsync(file.Path, SelectedYear, ct);
+
+            result = SelectedScheduleType switch
+            {
+                ScheduleType.Dmepos => await _dmeposImportService.ImportFromFileAsync(file.Path, SelectedYear, ct),
+                ScheduleType.PfsNational => await _pfsImportService.ImportFromFileAsync(file.Path, SelectedYear, ct),
+                ScheduleType.ClinicalLab => await _clfsImportService.ImportFromFileAsync(file.Path, SelectedYear, ct),
+                ScheduleType.AspDrug => await _aspImportService.ImportFromFileAsync(file.Path, SelectedYear, ct),
+                ScheduleType.Opps => await _oppsImportService.ImportFromFileAsync(file.Path, SelectedYear, ct),
+                ScheduleType.Asc => await _ascImportService.ImportFromFileAsync(file.Path, SelectedYear, ct),
+                _ => await _dmeposImportService.ImportFromFileAsync(file.Path, SelectedYear, ct)
+            };
 
             if (result.Success)
             {
@@ -265,7 +377,16 @@ public partial class MainViewModel : ObservableObject
             picker.FileTypeChoices.Add("Excel workbook", [".xlsx"]);
             picker.FileTypeChoices.Add("PDF document", [".pdf"]);
 
-            var scheduleLabel = SelectedScheduleType == ScheduleType.Dmepos ? "DMEPOS" : "PFS";
+            var scheduleLabel = SelectedScheduleType switch
+            {
+                ScheduleType.Dmepos => "DMEPOS",
+                ScheduleType.PfsNational => "PFS",
+                ScheduleType.ClinicalLab => "CLFS",
+                ScheduleType.AspDrug => "ASP",
+                ScheduleType.Opps => "OPPS",
+                ScheduleType.Asc => "ASC",
+                _ => "FeeSchedule"
+            };
             picker.SuggestedFileName = $"{scheduleLabel}_FeeSchedule_{SelectedYear}";
 
             var file = await picker.PickSaveFileAsync();
@@ -281,9 +402,16 @@ public partial class MainViewModel : ObservableObject
                 _ => CMSFeeApp.Core.Interfaces.ExportFormat.Csv
             };
 
-            var exporter = SelectedScheduleType == ScheduleType.Dmepos
-                ? _dmeposExportService
-                : _pfsExportService;
+            var exporter = SelectedScheduleType switch
+            {
+                ScheduleType.Dmepos => _dmeposExportService,
+                ScheduleType.PfsNational => _pfsExportService,
+                ScheduleType.ClinicalLab => _clfsExportService,
+                ScheduleType.AspDrug => _aspExportService,
+                ScheduleType.Opps => _oppsExportService,
+                ScheduleType.Asc => _ascExportService,
+                _ => _dmeposExportService
+            };
 
             await exporter.ExportAsync(format, file.Path, SelectedYear, SelectedState);
             StatusMessage = $"Export complete: {file.Name}";
@@ -333,11 +461,16 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            IReadOnlyList<int> years;
-            if (SelectedScheduleType == ScheduleType.Dmepos)
-                years = await Task.Run(() => _dmeposRepository.GetAvailableYears());
-            else
-                years = await Task.Run(() => _pfsRepository.GetAvailableYears());
+            IReadOnlyList<int> years = SelectedScheduleType switch
+            {
+                ScheduleType.Dmepos => await Task.Run(() => _dmeposRepository.GetAvailableYears()),
+                ScheduleType.PfsNational => await Task.Run(() => _pfsRepository.GetAvailableYears()),
+                ScheduleType.ClinicalLab => await Task.Run(() => _clfsRepository.GetAvailableYears()),
+                ScheduleType.AspDrug => await Task.Run(() => _aspRepository.GetAvailableYears()),
+                ScheduleType.Opps => await Task.Run(() => _oppsRepository.GetAvailableYears()),
+                ScheduleType.Asc => await Task.Run(() => _ascRepository.GetAvailableYears()),
+                _ => await Task.Run(() => _dmeposRepository.GetAvailableYears())
+            };
 
             if (years.Count > 0)
             {
